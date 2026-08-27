@@ -104,18 +104,5 @@ Licensing enquiries: https://fitexindustrial.com
 
 
 -------------------------------------------------------------------------------
-NOTE TO THE MAINTAINER — DELETE BEFORE PUBLISHING
-
-This is a drafting template, not legal advice, and it has not been reviewed by
-a lawyer. Before you take money for this software, have a qualified solicitor
-or attorney in your own jurisdiction review Sections 6-10 in particular. The
-safety disclaimer in Section 7 is the one you cannot afford to get wrong: you
-are selling a system that gates the release of physical product, and a customer
-will eventually blame it for an escape. Get that clause right, and carry
-professional indemnity / product liability insurance before your first paid
-installation.
-
-Also decide deliberately whether you want source-available at all. It is a real
-selling point to manufacturers, who distrust black boxes in their quality
-systems, but it makes Section 4(d) hard to enforce in practice.
+.
 -------------------------------------------------------------------------------
