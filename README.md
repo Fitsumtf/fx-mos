@@ -3,7 +3,7 @@
 A Manufacturing Operating System core: production control, traceability,
 process interlocking and OEE for discrete assembly lines.
 
-![tests](https://github.com/FITEX-INDUSTRIAL/fx-mos/actions/workflows/ci.yml/badge.svg)
+![tests](https://github.com/Fitsumtf/fx-mos/actions/workflows/ci.yml/badge.svg)
 
 Built by [FitEx Industrial](https://fitexindustrial.com).
 Commercial licence — see [LICENSE](LICENSE).
