@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements-dev.txt
+
+      - name: Test
+        run: pytest -q
+
+      - name: Smoke test the line
+        # If the simulator cannot get units through the line, the interlocks
+        # are wrong even when the unit tests pass. This catches that.
+        run: |
+          python -m fx_mos.simulator --units 20 --defect-rate 0.08 --seed 7 --reset \
+            | tee /tmp/sim.txt
+          python - <<'PY'
+          lines = dict(
+              l.rsplit(maxsplit=1)
+              for l in open("/tmp/sim.txt").read().splitlines()
+              if l and l[0].isalpha() and " " in l
+          )
+          signed_off = int(lines["signed off"])
+          assert signed_off >= 15, f"only {signed_off}/20 units cleared the line"
+          print(f"OK — {signed_off}/20 signed off")
+          PY
