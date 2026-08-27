@@ -1,0 +1,500 @@
+/* FX MOS floor display.
+   Palette is machine paint, not screen black: cold blue-grey enclosures with
+   safety amber doing the signalling work, the way a real plant marks a hazard.
+   Hazard diagonals mean exactly one thing here — this unit is locked. */
+
+:root {
+  --steel-950: #0F151A;
+  --steel-900: #151E25;
+  --steel-850: #1A242C;
+  --steel-800: #212E38;
+  --rule: #2B3A45;
+  --rule-soft: #223038;
+
+  --chalk: #DCE5EB;
+  --chalk-dim: #7E93A1;
+  --chalk-faint: #55697A;
+
+  --safety: #F2B01E;   /* hold, hazard, attention */
+  --go: #4FAF79;       /* in spec, moving */
+  --stop: #D6493C;     /* scrap, critical */
+  --info: #5A9BC4;     /* rework, informational */
+
+  --lane: 13px;
+  --r: 3px;
+
+  --display: 'Archivo', system-ui, sans-serif;
+  --body: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--steel-950);
+  color: var(--chalk);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; }
+
+.mono { font-family: var(--mono); font-variant-ligatures: none; }
+
+/* ---------------------------------------------------------------- header */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 22px;
+  height: 60px;
+  background: var(--steel-900);
+  border-bottom: 1px solid var(--rule);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-wrap: wrap;
+}
+
+.mark {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: .04em;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.mark-fx {
+  background: var(--safety);
+  color: var(--steel-950);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 15px;
+}
+.mark-mos { font-size: 15px; color: var(--chalk); }
+
+.bar-line { display: flex; align-items: baseline; gap: 9px; }
+.bar-code {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--safety);
+  border: 1px solid var(--rule);
+  padding: 2px 7px;
+  border-radius: 2px;
+}
+.bar-name { color: var(--chalk-dim); font-size: 13px; }
+
+.bar-stats { display: flex; gap: 22px; margin-left: auto; }
+.stat { text-align: right; }
+.stat-v {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.1;
+  display: block;
+}
+.stat-k {
+  font-family: var(--display);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .13em;
+  color: var(--chalk-faint);
+}
+.stat.is-alert .stat-v { color: var(--safety); }
+
+.bar-actions { display: flex; gap: 8px; }
+
+.btn {
+  background: var(--steel-800);
+  color: var(--chalk);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 7px 13px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.btn:hover { background: var(--steel-850); border-color: var(--chalk-faint); }
+.btn:focus-visible { outline: 2px solid var(--safety); outline-offset: 2px; }
+.btn[disabled] { opacity: .45; cursor: progress; }
+.btn-primary {
+  background: var(--safety);
+  color: var(--steel-950);
+  border-color: var(--safety);
+}
+.btn-primary:hover { background: #ffc23d; border-color: #ffc23d; }
+
+.btn-sm { padding: 4px 9px; font-size: 11px; }
+
+/* ------------------------------------------------------------ line spine */
+
+main { padding: 20px 22px 40px; max-width: 1560px; margin: 0 auto; }
+
+.spine-wrap {
+  background: var(--steel-900);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 16px 16px 18px;
+  margin-bottom: 18px;
+}
+
+.zones { display: flex; gap: 8px; margin-bottom: 7px; }
+.zone {
+  font-family: var(--display);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--rule);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zone[data-zone="MARRIAGE"] { color: var(--safety); border-bottom-color: var(--safety); }
+
+.spine { display: flex; gap: 8px; align-items: stretch; }
+
+.bay {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--steel-850);
+  border: 1px solid var(--rule);
+  border-top: none;
+  border-radius: 0 0 var(--r) var(--r);
+  padding: 10px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+/* Painted floor lane down the middle of every bay. */
+.bay::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 2px;
+  background: var(--rule-soft);
+}
+.bay.is-held { border-color: var(--stop); }
+.bay.is-held::before { background: var(--stop); }
+
+.bay-code {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--chalk);
+}
+.bay-name {
+  font-size: 10.5px;
+  color: var(--chalk-faint);
+  line-height: 1.35;
+  min-height: 2.2em;
+}
+.bay-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--chalk-faint);
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px dashed var(--rule-soft);
+  padding-top: 6px;
+  margin-top: auto;
+}
+
+/* A carrier is a unit sitting in a bay. */
+.carrier {
+  width: 100%;
+  text-align: left;
+  background: var(--steel-800);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--go);
+  border-radius: 2px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--chalk);
+  transition: transform .12s, border-color .12s;
+}
+.carrier:hover { transform: translateX(2px); border-color: var(--chalk-faint); }
+.carrier:focus-visible { outline: 2px solid var(--safety); outline-offset: 1px; }
+.carrier.is-selected { border-color: var(--safety); background: #2A3742; }
+
+.carrier-serial {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: -.01em;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.carrier-state {
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+}
+
+.carrier[data-status="HELD"] {
+  border-left-color: var(--safety);
+  /* Hazard diagonals: the one decorative device on the page, and it is load
+     bearing — it means the interlock has this unit. */
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(242, 176, 30, .16) 0 8px,
+    transparent 8px 16px
+  );
+  background-size: 200% 100%;
+  animation: crawl 2.4s linear infinite;
+}
+.carrier[data-status="HELD"] .carrier-state { color: var(--safety); }
+.carrier[data-status="REWORK"] { border-left-color: var(--info); }
+.carrier[data-status="QUEUED"] { border-left-color: var(--chalk-faint); }
+
+@keyframes crawl { to { background-position: -32px 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .carrier[data-status="HELD"] { animation: none; }
+  .carrier:hover { transform: none; }
+}
+
+.bay-empty {
+  font-family: var(--display);
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #3A4B58;
+  padding: 8px 0;
+}
+
+/* --------------------------------------------------------------- panels */
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(320px, 1.1fr) minmax(320px, 1.2fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--steel-900);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--steel-850);
+}
+.panel-head h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+.tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--chalk-faint);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 1px 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
+}
+.tag.is-alert { color: var(--safety); border-color: var(--safety); }
+
+.panel-body { padding: 12px 14px; max-height: 460px; overflow-y: auto; }
+
+.empty { color: var(--chalk-faint); font-size: 13px; margin: 6px 0; }
+
+/* ----------------------------------------------------------------- holds */
+
+.hold {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--safety);
+  border-radius: 2px;
+  padding: 10px 11px;
+  margin-bottom: 9px;
+  background: var(--steel-850);
+}
+.hold[data-severity="CRITICAL"] { border-left-color: var(--stop); }
+
+.hold-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.hold-code { font-family: var(--mono); font-size: 11px; color: var(--safety); }
+.hold-where { font-family: var(--mono); font-size: 10.5px; color: var(--chalk-faint); }
+.hold-title { font-size: 13px; margin: 5px 0 3px; }
+.hold-unit { font-family: var(--mono); font-size: 10.5px; color: var(--chalk-dim); }
+.hold-reason {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--chalk-faint);
+  margin: 6px 0 0;
+  padding-left: 10px;
+  border-left: 1px solid var(--rule);
+}
+.hold-actions { display: flex; gap: 6px; margin-top: 9px; }
+
+/* ------------------------------------------------------------------- OEE */
+
+.oee-row {
+  display: grid;
+  grid-template-columns: 62px 1fr 42px;
+  gap: 9px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.oee-row:last-child { border-bottom: none; }
+.oee-code { font-family: var(--mono); font-size: 11px; color: var(--chalk-dim); }
+/* The cascade is overlaid, not stacked: each band starts at the left and is
+   shorter than the one behind it, so the darkest band's width IS the OEE. */
+.oee-bar {
+  height: var(--lane);
+  background: var(--steel-800);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+.oee-seg { position: absolute; left: 0; top: 0; height: 100%; }
+.oee-seg.a { background: #2E6B4C; }
+.oee-seg.p { background: #3C8A63; }
+.oee-seg.q { background: var(--go); }
+.oee-val { font-family: var(--mono); font-size: 11px; text-align: right; }
+.oee-row.is-bottleneck .oee-code { color: var(--safety); }
+.oee-row.is-bottleneck .oee-val { color: var(--safety); }
+
+.oee-note {
+  font-size: 11.5px;
+  color: var(--chalk-faint);
+  margin: 10px 0 0;
+  padding-top: 9px;
+  border-top: 1px dashed var(--rule);
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+  margin-bottom: 9px;
+}
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 8px; height: 8px;
+  margin-right: 4px;
+  border-radius: 1px;
+}
+.legend .a::before { background: #2E6B4C; }
+.legend .p::before { background: #3C8A63; }
+.legend .q::before { background: var(--go); }
+
+/* ----------------------------------------------------------- build record */
+
+.rec-section {
+  font-family: var(--display);
+  font-size: 9.5px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+  margin: 14px 0 7px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+}
+.rec-section:first-child { margin-top: 0; }
+
+.kv { display: grid; grid-template-columns: 95px 1fr; gap: 3px 10px; font-size: 12.5px; }
+.kv dt { color: var(--chalk-faint); }
+.kv dd { margin: 0; font-family: var(--mono); font-size: 11.5px; }
+
+.rec-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.rec-line:last-child { border-bottom: none; }
+.rec-line b { font-weight: 500; color: var(--chalk-dim); }
+.rec-line .ok { color: var(--go); }
+.rec-line .bad { color: var(--stop); }
+.rec-flag {
+  font-family: var(--display);
+  font-size: 8.5px;
+  letter-spacing: .1em;
+  color: var(--safety);
+  border: 1px solid var(--rule);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+/* --------------------------------------------------------------- toast */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translate(-50%, 20px);
+  background: var(--steel-800);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--safety);
+  border-radius: var(--r);
+  padding: 10px 16px;
+  font-size: 13px;
+  max-width: 620px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s, transform .18s;
+  z-index: 40;
+}
+.toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.toast.is-bad { border-left-color: var(--stop); }
+
+/* ------------------------------------------------------------ responsive */
+
+@media (max-width: 1180px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+  .panel-unit { grid-column: 1 / -1; }
+}
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .spine, .zones { overflow-x: auto; padding-bottom: 6px; }
+  .bay { min-width: 148px; flex: 0 0 148px; }
+  .zone { min-width: 148px; }
+  .bar { height: auto; padding: 10px 14px; }
+  .bar-stats { width: 100%; order: 3; justify-content: space-between; margin-left: 0; }
+  main { padding: 14px; }
+}

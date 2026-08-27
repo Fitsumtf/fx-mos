@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX MOS — GA-1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="mark">
+    <span class="mark-fx">FX</span><span class="mark-mos">MOS</span>
+  </div>
+  <div class="bar-line">
+    <span class="bar-code" id="line-code">GA-1</span>
+    <span class="bar-name" id="line-name">—</span>
+  </div>
+  <div class="bar-stats" id="bar-stats"></div>
+  <div class="bar-actions">
+    <button class="btn" id="btn-order">Release order</button>
+    <button class="btn btn-primary" id="btn-sim">Run 8 units</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- The line spine: the whole point of the page. -->
+  <section class="spine-wrap" aria-label="Assembly line">
+    <div class="zones" id="zones"></div>
+    <div class="spine" id="spine">
+      <p class="empty">Loading the line…</p>
+    </div>
+  </section>
+
+  <div class="grid">
+
+    <section class="panel panel-holds">
+      <div class="panel-head">
+        <h2>Holds</h2>
+        <span class="tag" id="hold-count">0</span>
+      </div>
+      <div class="panel-body" id="holds">
+        <p class="empty">Nothing is held. The line is free to run.</p>
+      </div>
+    </section>
+
+    <section class="panel panel-oee">
+      <div class="panel-head">
+        <h2>Where the time goes</h2>
+        <span class="tag" id="bottleneck">—</span>
+      </div>
+      <div class="panel-body" id="oee"></div>
+    </section>
+
+    <section class="panel panel-unit">
+      <div class="panel-head">
+        <h2>Build record</h2>
+        <span class="tag mono" id="unit-serial">no unit selected</span>
+      </div>
+      <div class="panel-body" id="unit">
+        <p class="empty">Pick a carrier on the line to open its record.</p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

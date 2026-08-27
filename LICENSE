@@ -1,0 +1,121 @@
+FX MOS — Commercial Software License
+Copyright (c) 2026 FitEx Industrial. All rights reserved.
+
+This software and its accompanying documentation ("the Software") are the
+proprietary property of FitEx Industrial ("the Licensor"). The Software is
+licensed, not sold.
+
+
+1. GRANT OF LICENSE
+
+Subject to a valid, paid subscription or a signed written agreement with the
+Licensor, the Licensor grants the customer ("the Licensee") a non-exclusive,
+non-transferable, revocable licence to install and run the Software at the
+production sites named in that agreement, for the Licensee's own internal
+manufacturing operations.
+
+
+2. SOURCE AVAILABILITY
+
+The source code is made available to the Licensee so that it can be audited,
+validated against the Licensee's own quality procedures, and extended for the
+Licensee's internal use. Source availability does not make the Software open
+source and does not grant any right beyond those stated in Section 1.
+
+
+3. PERMITTED
+
+  a. Running the Software on the Licensee's own infrastructure.
+  b. Modifying the Software for the Licensee's internal use.
+  c. Making backup and disaster-recovery copies.
+  d. Auditing the source for regulatory, safety or customer-quality purposes.
+
+
+4. NOT PERMITTED
+
+Without the Licensor's prior written consent, the Licensee shall not:
+
+  a. Distribute, sublicense, resell, rent or lease the Software, in whole or in
+     part, whether modified or unmodified.
+  b. Offer the Software, or any derivative of it, to third parties as a hosted
+     or managed service.
+  c. Remove or obscure any copyright, licence or attribution notice.
+  d. Use the Software to build a competing manufacturing execution product.
+
+
+5. EVALUATION
+
+The Licensor may grant a time-limited evaluation licence in writing. An
+evaluation licence permits non-production use only. Running the Software to
+control, gate, release or record any saleable product requires a paid licence.
+
+
+6. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+
+7. SAFETY AND FITNESS FOR PURPOSE — READ THIS
+
+The Software records, gates and reports manufacturing process data. It is
+NOT a safety system and is NOT certified to any functional-safety standard.
+
+  a. It must never be relied upon as the sole means of preventing injury,
+     equipment damage, or the release of a defective product.
+  b. Physical safety interlocks, emergency stops, light curtains, guarding and
+     safety PLCs remain the Licensee's responsibility and must remain
+     independent of the Software.
+  c. The Licensee is responsible for validating the Software against its own
+     quality management system, and for the correctness of every routing,
+     specification limit and interlock it configures.
+  d. Nothing in the Software relieves the Licensee of any obligation under
+     applicable product-safety, automotive, medical-device or other regulation.
+
+
+8. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM OR IN
+CONNECTION WITH THE SOFTWARE OR ITS USE, INCLUDING WITHOUT LIMITATION ANY LOSS
+OF PRODUCTION, LOSS OF DATA, SCRAP, RECALL, WARRANTY OR CONSEQUENTIAL LOSS.
+
+Where liability cannot lawfully be excluded, the Licensor's total aggregate
+liability is limited to the licence fees paid by the Licensee in the twelve
+months preceding the event giving rise to the claim.
+
+
+9. TERMINATION
+
+This licence terminates automatically if the Licensee breaches any term, or on
+non-payment. On termination the Licensee shall cease all use and destroy all
+copies, except that build records already created remain the Licensee's
+property and may be retained for regulatory and traceability purposes.
+
+
+10. GOVERNING LAW
+
+This licence is governed by the laws of the jurisdiction in which FitEx
+Industrial is registered, without regard to conflict-of-law provisions.
+
+
+Licensing enquiries: https://fitexindustrial.com
+
+
+-------------------------------------------------------------------------------
+NOTE TO THE MAINTAINER — DELETE BEFORE PUBLISHING
+
+This is a drafting template, not legal advice, and it has not been reviewed by
+a lawyer. Before you take money for this software, have a qualified solicitor
+or attorney in your own jurisdiction review Sections 6-10 in particular. The
+safety disclaimer in Section 7 is the one you cannot afford to get wrong: you
+are selling a system that gates the release of physical product, and a customer
+will eventually blame it for an escape. Get that clause right, and carry
+professional indemnity / product liability insurance before your first paid
+installation.
+
+Also decide deliberately whether you want source-available at all. It is a real
+selling point to manufacturers, who distrust black boxes in their quality
+systems, but it makes Section 4(d) hard to enforce in practice.
+-------------------------------------------------------------------------------

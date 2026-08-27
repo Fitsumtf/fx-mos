@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX MOS — Manufacturing Operating System | FitEx Industrial</title>
+<meta name="description" content="Traceability, process interlocking and OEE for discrete assembly lines. Produce the build record of any serial number in milliseconds.">
+
+<meta property="og:title" content="FX MOS — Manufacturing Operating System">
+<meta property="og:description" content="When your customer asks for the build record of a specific serial number, how long does it take you to produce it?">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* Datasheet, not landing page. The buyer reads engineering documents all day;
+   this should feel like one. Paper stock is cool grey, rules are thin and
+   deliberate, and safety amber is the only colour that carries meaning. */
+
+:root {
+  --paper:      #F1F3F4;
+  --paper-warm: #E7EAEC;
+  --steel:      #14202A;
+  --steel-alt:  #1B2A36;
+  --ink:        #101619;
+  --ink-dim:    #56646E;
+  --ink-faint:  #8996A0;
+  --rule:       #CDD3D7;
+  --rule-dark:  #2B3A45;
+  --safety:     #C87F00;
+  --safety-br:  #F2B01E;
+
+  --display: 'Archivo', system-ui, sans-serif;
+  --body: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --gut: clamp(20px, 5vw, 64px);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--gut); }
+
+h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -.015em; margin: 0; }
+p { margin: 0 0 1em; }
+a { color: inherit; }
+
+/* Marginal label, like a drawing title block. Used to open every section. */
+.label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: block;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 32px;
+}
+.on-dark .label { color: #6D8090; border-bottom-color: var(--rule-dark); }
+
+/* ------------------------------------------------------------------- nav */
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 64px;
+  border-bottom: 1px solid var(--rule);
+  position: sticky;
+  top: 0;
+  background: rgba(241,243,244,.94);
+  backdrop-filter: blur(6px);
+  z-index: 30;
+}
+.brand { display: flex; align-items: baseline; gap: 6px; font-family: var(--display); font-weight: 700; }
+.brand-fx { background: var(--safety-br); color: var(--steel); padding: 2px 7px; border-radius: 2px; font-size: 15px; }
+.brand-mos { font-size: 15px; }
+.nav-links { margin-left: auto; display: flex; gap: 26px; font-size: 14px; }
+.nav-links a { color: var(--ink-dim); text-decoration: none; }
+.nav-links a:hover { color: var(--ink); }
+@media (max-width: 720px) { .nav-links { display: none; } }
+
+/* ----------------------------------------------------------------- hero */
+
+.hero { padding: clamp(56px, 9vw, 110px) 0 clamp(40px, 6vw, 72px); }
+.hero h1 {
+  font-size: clamp(29px, 4.6vw, 52px);
+  line-height: 1.1;
+  max-width: 24ch;
+  margin-bottom: 26px;
+}
+.hero h1 em { font-style: normal; color: var(--safety); }
+.hero-sub { font-size: clamp(17px, 2vw, 20px); color: var(--ink-dim); max-width: 56ch; }
+
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 34px; }
+.btn {
+  display: inline-block;
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 13px 24px;
+  border-radius: 3px;
+  border: 1px solid var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .13s, color .13s;
+}
+.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-primary:hover { background: var(--safety); border-color: var(--safety); color: #fff; }
+.btn-ghost { background: transparent; color: var(--ink); }
+.btn-ghost:hover { background: var(--ink); color: var(--paper); }
+
+/* --------------------------------------------------------------- figure */
+
+.shot {
+  border: 1px solid var(--rule-dark);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--steel);
+  box-shadow: 0 1px 3px rgba(16,22,25,.12);
+}
+.shot img { display: block; width: 100%; height: auto; }
+.caption {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-top: 12px;
+  max-width: 74ch;
+  line-height: 1.55;
+}
+
+/* -------------------------------------------------------------- sections */
+
+section { padding: clamp(56px, 8vw, 96px) 0; border-top: 1px solid var(--rule); }
+section:first-of-type { border-top: none; }
+.on-dark { background: var(--steel); color: #DDE4E9; border-top-color: var(--rule-dark); }
+.on-dark h2 { color: #fff; }
+.on-dark p { color: #A7B6C1; }
+
+h2 { font-size: clamp(23px, 3.2vw, 33px); line-height: 1.2; margin-bottom: 18px; max-width: 22ch; }
+.lede { font-size: 18px; color: var(--ink-dim); max-width: 60ch; }
+.on-dark .lede { color: #A7B6C1; }
+
+/* pains */
+.pains { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 40px; }
+.pain { background: var(--paper); padding: 26px 24px; }
+.pain-n { font-family: var(--mono); font-size: 12px; color: var(--safety); display: block; margin-bottom: 12px; }
+.pain h3 { font-size: 17px; margin-bottom: 8px; }
+.pain p { font-size: 15px; color: var(--ink-dim); margin: 0; }
+
+/* capability table */
+.spec { width: 100%; border-collapse: collapse; margin-top: 36px; font-size: 15.5px; }
+.spec th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 400;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.spec td { padding: 15px 16px 15px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.spec td:first-child { font-weight: 600; width: 30%; white-space: nowrap; }
+.spec td:last-child { color: var(--ink-dim); padding-right: 0; }
+@media (max-width: 640px) {
+  .spec td:first-child { white-space: normal; width: 38%; }
+  .spec { font-size: 14.5px; }
+}
+
+/* line diagram */
+.line-map { display: flex; gap: 5px; margin: 40px 0 14px; overflow-x: auto; padding-bottom: 6px; }
+.zone-box { flex: 1 1 0; min-width: 118px; border: 1px solid var(--rule-dark); border-top: 3px solid var(--rule-dark); border-radius: 0 0 3px 3px; padding: 14px 12px 16px; background: var(--steel-alt); }
+.zone-box.is-key { border-color: var(--safety-br); border-top-color: var(--safety-br); }
+.zone-box b { font-family: var(--display); font-size: 12.5px; display: block; color: #fff; letter-spacing: .01em; }
+.zone-box span { font-family: var(--mono); font-size: 10.5px; color: #7C8F9C; }
+
+/* proof */
+.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 28px; margin: 40px 0 8px; }
+.fig-n { font-family: var(--display); font-size: clamp(30px, 4.4vw, 42px); line-height: 1; color: var(--safety-br); }
+.fig-k { font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: #7C8F9C; margin-top: 8px; display: block; }
+
+.quote { border-left: 2px solid var(--safety-br); padding-left: 22px; margin: 40px 0 0; max-width: 62ch; }
+.quote p { font-size: 16.5px; }
+.quote p:last-child { margin-bottom: 0; }
+
+/* pricing */
+.tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 40px; }
+.tier { background: var(--paper); padding: 30px 26px; display: flex; flex-direction: column; }
+.tier.is-featured { background: var(--paper-warm); }
+.tier h3 { font-size: 19px; margin-bottom: 4px; }
+.tier-for { font-family: var(--mono); font-size: 11.5px; color: var(--safety); letter-spacing: .06em; text-transform: uppercase; }
+.tier ul { list-style: none; padding: 0; margin: 20px 0 26px; font-size: 15px; color: var(--ink-dim); }
+.tier li { padding: 7px 0 7px 20px; position: relative; border-bottom: 1px solid var(--rule); }
+.tier li:last-child { border-bottom: none; }
+.tier li::before { content: "—"; position: absolute; left: 0; color: var(--ink-faint); }
+.tier .btn { margin-top: auto; text-align: center; }
+
+.price-note { font-family: var(--mono); font-size: 13px; color: var(--ink-dim); margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--rule); max-width: 68ch; line-height: 1.65; }
+
+/* limits — the honest section, and the differentiator */
+.limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(238px, 1fr)); gap: 26px 40px; margin-top: 36px; }
+.limit b { display: block; font-family: var(--display); font-size: 15px; margin-bottom: 5px; }
+.limit span { font-size: 14.5px; color: #A7B6C1; }
+
+.warn {
+  border: 1px solid var(--safety-br);
+  border-left-width: 3px;
+  border-radius: 3px;
+  padding: 18px 22px;
+  margin-top: 36px;
+  font-size: 15px;
+  color: #C8D4DC;
+  max-width: 76ch;
+}
+.warn b { color: var(--safety-br); font-family: var(--display); }
+
+/* form */
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 660px; margin-top: 36px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.field input, .field textarea, .field select {
+  font-family: var(--body);
+  font-size: 15px;
+  padding: 11px 13px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: #fff;
+  color: var(--ink);
+}
+.field textarea { min-height: 118px; resize: vertical; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--safety); outline-offset: -1px; border-color: var(--safety); }
+@media (max-width: 620px) { .form { grid-template-columns: 1fr; } }
+
+.form-note { font-size: 13.5px; color: var(--ink-faint); margin-top: 16px; max-width: 52ch; }
+
+/* footer */
+footer { border-top: 1px solid var(--rule); padding: 34px 0 46px; font-size: 14px; color: var(--ink-faint); }
+.foot-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+.foot-row a { color: var(--ink-dim); text-decoration: none; }
+.foot-row a:hover { color: var(--ink); }
+.foot-legal { margin-top: 18px; font-size: 12.5px; line-height: 1.6; max-width: 78ch; }
+</style>
+</head>
+<body>
+
+<nav class="wrap">
+  <a class="brand" href="#top" style="text-decoration:none">
+    <span class="brand-fx">FX</span><span class="brand-mos">MOS</span>
+  </a>
+  <div class="nav-links">
+    <a href="#what">What it does</a>
+    <a href="#proof">How it's built</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#limits">Limits</a>
+    <a href="#contact">Talk to us</a>
+  </div>
+</nav>
+
+<header class="hero wrap" id="top">
+  <h1>When your customer asks for the build record of one serial number, <em>how long does it take you?</em></h1>
+  <p class="hero-sub">
+    If the answer is hours, or a person going through folders, you are one audit
+    away from losing a contract. FX MOS produces it in milliseconds — every
+    component lot, every measurement, against the specification that was in
+    force on the day that unit was built.
+  </p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="#contact">Book a 20-minute call</a>
+    <a class="btn btn-ghost" href="#what">See what it does</a>
+  </div>
+</header>
+
+<section class="wrap" style="padding-top:0">
+  <div class="shot">
+    <img src="../img/floor-display.png"
+         alt="The FX MOS floor display: eight stations across five zones, with one unit held by an interlock at SF-10, an open non-conformance, and OEE per station.">
+  </div>
+  <p class="caption">
+    A unit held at SF-10. The hazard stripes mean the interlock has it. The panel
+    names the failing measurement and its window — sub-frame bolt at 88 Nm
+    against a 108–132 limit. Nothing behind it moves until a supervisor
+    dispositions the hold, and the disposition goes on the permanent record.
+  </p>
+</section>
+
+<section class="wrap">
+  <span class="label">The problem</span>
+  <h2>Paper travellers work until the day they don't</h2>
+  <p class="lede">
+    Most small and mid-size manufacturers run production on a printed traveller,
+    a shared spreadsheet, and one person who remembers everything. It holds
+    together right up to the moment something goes wrong.
+  </p>
+
+  <div class="pains">
+    <div class="pain">
+      <span class="pain-n">01</span>
+      <h3>The audit</h3>
+      <p>A customer wants the build record for a serial they received nine months ago. You have the traveller somewhere. Probably.</p>
+    </div>
+    <div class="pain">
+      <span class="pain-n">02</span>
+      <h3>The bad lot</h3>
+      <p>A supplier calls: one heat of castings was out of spec. Which units contain it? Without genealogy, containment is everything you shipped that quarter.</p>
+    </div>
+    <div class="pain">
+      <span class="pain-n">03</span>
+      <h3>The number nobody trusts</h3>
+      <p>You are asked for first-pass yield. You give a figure. Everyone in the room knows it is an estimate, including you.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="what">
+  <span class="label">Capability</span>
+  <h2>What the system actually does</h2>
+  <p class="lede">
+    Seven functions. Each one exists because a plant loses money without it.
+  </p>
+
+  <table class="spec">
+    <thead>
+      <tr><th>Function</th><th>What it means on the floor</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Traceability</td><td>Every unit carries a birth certificate: component serials and lots, every measurement with the spec window in force, every step and who ran it. Queryable in both directions — from a unit to its parts, and from a bad lot to every unit containing it.</td></tr>
+      <tr><td>Process interlocking</td><td>A unit cannot advance if a critical bolt was not torqued, a part was not scanned, or a test was skipped. The block is physical in effect: it holds the unit and tells the operator exactly what to fix.</td></tr>
+      <tr><td>Production control</td><td>Units are dispatched station by station against a released routing. The system knows where everything is, and what is blocking each one.</td></tr>
+      <tr><td>Quality management</td><td>A failure opens a non-conformance automatically and holds the unit. Closing it requires a disposition — rework, use as is, deviation or scrap — and a written resolution. Nothing leaves the line on a shrug.</td></tr>
+      <tr><td>Process data logging</td><td>Torque, angle, resistance, volume, cycle time. Stored with the limits that applied at the time, so the record stays meaningful after the spec changes.</td></tr>
+      <tr><td>Paperless work instructions</td><td>The operator sees the instruction for the step in front of them, from the routing version that unit is being built under.</td></tr>
+      <tr><td>OEE and constraint</td><td>Availability, performance and quality per station, with the loss broken out — down, starved, blocked, changeover, speed, scrap. The line's number is its bottleneck, not the average, because a line runs at the pace of its worst station.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="on-dark">
+  <div class="wrap">
+    <span class="label">Line model</span>
+    <h2>Modelled on how a line is actually laid out</h2>
+    <p class="lede">
+      Zones, stations, and a routing that moves in one direction. The reference
+      configuration is a vehicle progression, but the model is generic — any
+      discrete assembly with serialised units and gated progression fits it.
+    </p>
+
+    <div class="line-map">
+      <div class="zone-box"><b>Sub-frame</b><span>SF-10 · SF-20</span></div>
+      <div class="zone-box"><b>Pre-marriage</b><span>PM-10 · PM-20</span></div>
+      <div class="zone-box is-key"><b>Marriage</b><span>MR-10</span></div>
+      <div class="zone-box"><b>Post-marriage</b><span>PO-10 · PO-20</span></div>
+      <div class="zone-box"><b>End of line</b><span>EOL-10</span></div>
+    </div>
+    <p class="caption" style="color:#7C8F9C">
+      New process step? Clone the released routing, add the step with its
+      measurement limits, validate, release. Live for the next unit started.
+      Units already on the line finish under the version they began with.
+    </p>
+  </div>
+</section>
+
+<section class="wrap" id="proof">
+  <span class="label">How it's built</span>
+  <h2>Source-available, because you should not trust a black box in your quality system</h2>
+  <p class="lede">
+    The full source ships with the licence. Your quality team can audit it,
+    validate it against your own procedures, and extend it. You are not taking
+    our word for how a gate decides.
+  </p>
+
+  <div class="quote">
+    <p><b>Two bugs found by running it, not by reading it.</b></p>
+    <p>
+      The first: a unit that failed a torque check, went through rework and
+      passed retest was still blocked — by its own history. The line plugged
+      behind it. The fix separates the audit record, which must never be
+      rewritten, from current state, which is what the interlock reads.
+    </p>
+    <p>
+      The second: a station that ran for 45 minutes and produced nothing was
+      reported as a speed loss. That sends a reliability engineer to retune a
+      machine that was never the problem.
+    </p>
+    <p>
+      Both are in the commit history with named regression tests. We would
+      rather show you that than a feature list.
+    </p>
+  </div>
+</section>
+
+<section class="on-dark">
+  <div class="wrap">
+    <div class="figures">
+      <div><div class="fig-n">28</div><span class="fig-k">Automated tests</span></div>
+      <div><div class="fig-n">&lt;10ms</div><span class="fig-k">Build record query</span></div>
+      <div><div class="fig-n">5</div><span class="fig-k">Zones modelled</span></div>
+      <div><div class="fig-n">100%</div><span class="fig-k">Source disclosed</span></div>
+    </div>
+    <p class="caption" style="color:#7C8F9C;margin-top:24px">
+      Python, FastAPI, SQLAlchemy. Runs on SQLite for a pilot, PostgreSQL for
+      production. Deploys on your own hardware — your quality records never
+      have to leave your plant.
+    </p>
+  </div>
+</section>
+
+<section class="wrap" id="pricing">
+  <span class="label">Commercial</span>
+  <h2>Priced per site, per year</h2>
+  <p class="lede">
+    Not per seat. Factories run shifts, and per-seat pricing makes plants ration
+    access — which is how a system stops being used.
+  </p>
+
+  <div class="tiers">
+    <div class="tier">
+      <h3>Line</h3>
+      <span class="tier-for">One line, up to 12 stations</span>
+      <ul>
+        <li>Traceability and genealogy</li>
+        <li>Routings and interlocking</li>
+        <li>Non-conformance workflow</li>
+        <li>OEE and constraint analysis</li>
+        <li>Floor display</li>
+        <li>Email support</li>
+      </ul>
+      <a class="btn btn-ghost" href="#contact">Request a quote</a>
+    </div>
+
+    <div class="tier is-featured">
+      <h3>Plant</h3>
+      <span class="tier-for">Up to six lines</span>
+      <ul>
+        <li>Everything in Line</li>
+        <li>ERP integration</li>
+        <li>Multi-model routings</li>
+        <li>Device layer integration</li>
+        <li>Roles and electronic signature</li>
+        <li>Priority support</li>
+      </ul>
+      <a class="btn btn-primary" href="#contact">Request a quote</a>
+    </div>
+
+    <div class="tier">
+      <h3>Enterprise</h3>
+      <span class="tier-for">Multi-site</span>
+      <ul>
+        <li>Everything in Plant</li>
+        <li>On-premise deployment</li>
+        <li>Source escrow</li>
+        <li>Response-time SLA</li>
+        <li>Named engineer</li>
+        <li>Validation support</li>
+      </ul>
+      <a class="btn btn-ghost" href="#contact">Request a quote</a>
+    </div>
+  </div>
+
+  <p class="price-note">
+    Implementation is quoted separately and billed as a fixed fee: modelling
+    your line, loading your routings and specification limits, integrating your
+    tools, and training your supervisors. That work is where a MOS succeeds or
+    fails, and we would rather price it honestly than bury it in a licence.
+  </p>
+</section>
+
+<section class="on-dark" id="limits">
+  <div class="wrap">
+    <span class="label">Scope</span>
+    <h2>What it does not do yet</h2>
+    <p class="lede">
+      Published deliberately. You will find these out in week two of a pilot
+      anyway, and it is cheaper for both of us if you know now.
+    </p>
+
+    <div class="limits">
+      <div class="limit"><b>No device layer out of the box</b><span>Steps are recorded over an API. Connecting torque tools, testers and PLCs (OPC-UA, MQTT) is integration work, quoted per site.</span></div>
+      <div class="limit"><b>No scheduling optimiser</b><span>Units are dispatched in order. Sequencing and load balancing are not modelled.</span></div>
+      <div class="limit"><b>Roles and e-signature are Plant tier</b><span>The core has no authentication. Regulated sites need the signed-record layer before go-live.</span></div>
+      <div class="limit"><b>Single plant</b><span>Multi-site rollup and cross-plant reporting are Enterprise scope.</span></div>
+    </div>
+
+    <div class="warn">
+      <b>FX MOS is not a safety system.</b> It records, gates and reports process
+      data. It is not certified to any functional-safety standard. Physical
+      interlocks, emergency stops, guarding and safety PLCs must remain
+      independent of it and remain your responsibility.
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="contact">
+  <span class="label">Contact</span>
+  <h2>Tell us about one line</h2>
+  <p class="lede">
+    Not a demo request form. Describe one line — how many stations, what you
+    build, and what happens today when a customer asks for a build record.
+    We will tell you honestly whether this fits.
+  </p>
+
+  <!--
+    WIRE THIS UP BEFORE PUBLISHING.
+    The form currently posts nowhere. Two easy options:
+      1. Formspree  — set action="https://formspree.io/f/YOUR_ID"
+      2. Your host's own form handler (most site builders provide one)
+    Whatever you choose, confirm submissions land in an inbox you actually
+    read. A lead form that silently fails is worse than no form.
+  -->
+  <form class="form" action="#" method="POST">
+    <div class="field">
+      <label for="name">Name</label>
+      <input id="name" name="name" type="text" required autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="company">Company</label>
+      <input id="company" name="company" type="text" required autocomplete="organization">
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="stations">Stations on the line</label>
+      <select id="stations" name="stations">
+        <option>1 – 5</option>
+        <option>6 – 12</option>
+        <option>13 – 30</option>
+        <option>More than 30</option>
+        <option>Not sure yet</option>
+      </select>
+    </div>
+    <div class="field wide">
+      <label for="message">What happens today when a customer asks for a build record?</label>
+      <textarea id="message" name="message" required></textarea>
+    </div>
+    <div class="field wide">
+      <button class="btn btn-primary" type="submit">Send</button>
+    </div>
+  </form>
+  <p class="form-note">
+    We reply to every message from a real manufacturer within two working days.
+  </p>
+</section>
+
+<footer class="wrap">
+  <div class="foot-row">
+    <a class="brand" href="#top" style="text-decoration:none">
+      <span class="brand-fx">FX</span><span class="brand-mos">MOS</span>
+    </a>
+    <a href="https://fitexindustrial.com">FitEx Industrial</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#limits">Scope</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <p class="foot-legal">
+    FX MOS is licensed commercial software. Source is disclosed to licensees
+    under a commercial licence; it is not open source. FX MOS is not a
+    functional-safety system and must not be relied upon as the sole means of
+    preventing injury, equipment damage or the release of defective product.
+    <br>© 2026 FitEx Industrial. All rights reserved.
+  </p>
+</footer>
+
+</body>
+</html>
