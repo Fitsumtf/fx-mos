@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX MOS — Service shop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="/static/shop.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="mark"><span class="mark-fx">FX</span><span class="mark-mos">MOS</span></div>
+  <div class="bar-line">
+    <span class="bar-code" id="shop-code">SVC-1</span>
+    <span class="bar-name" id="shop-name">—</span>
+  </div>
+  <div class="bar-stats" id="bar-stats"></div>
+  <div class="bar-actions">
+    <a class="btn" href="/">Assembly line</a>
+    <button class="btn btn-primary" id="btn-day">Run a service day</button>
+  </div>
+</header>
+
+<main>
+
+  <section class="spine-wrap" aria-label="Service bays">
+    <div class="bays-head">
+      <h2 class="bays-title">Bays</h2>
+      <span class="bays-note" id="bays-note">—</span>
+    </div>
+    <div class="bays" id="bays">
+      <p class="empty">Loading the shop…</p>
+    </div>
+  </section>
+
+  <div class="grid">
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Not releasable</h2>
+        <span class="tag" id="hold-count">0</span>
+      </div>
+      <div class="panel-body" id="holds">
+        <p class="empty">Nothing is held.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Where the day went</h2>
+        <span class="tag" id="busiest">—</span>
+      </div>
+      <div class="panel-body" id="util"></div>
+    </section>
+
+    <section class="panel panel-record">
+      <div class="panel-head">
+        <h2>Proof of work</h2>
+        <span class="tag mono" id="veh-serial">no vehicle selected</span>
+      </div>
+      <div class="panel-body" id="record">
+        <p class="empty">
+          Pick a vehicle in a bay. This is what you show a customer who says
+          the work was not done.
+        </p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/static/shop.js"></script>
+</body>
+</html>

@@ -23,6 +23,7 @@ from ..engine import execution, gating, genealogy, nc, oee, routing
 from ..erp import warp
 from ..models import (
     Disposition,
+    Layout,
     Flow,
     FlowStatus,
     FlowStep,
@@ -36,6 +37,7 @@ from ..models import (
     UnitStepRecord,
 )
 from ..seed import seed
+from ..seed_shop import seed_shop
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -52,6 +54,7 @@ def _startup() -> None:
     init_db()
     with session_scope() as session:
         seed(session)
+        seed_shop(session)
 
 
 # --------------------------------------------------------------------------
@@ -423,6 +426,30 @@ def advance_unit(
     return result
 
 
+@app.post("/api/units/{serial}/assign")
+def assign_bay(serial: str, bay: str, session: Session = Depends(get_session)) -> dict:
+    """Put a vehicle into a bay. Parallel shops only."""
+    unit = _unit(session, serial)
+    target = _station(session, unit.line_id, bay)
+    result = execution.assign_bay(session, unit, target)
+    session.commit()
+    return result
+
+
+@app.get("/api/units/{serial}/release-check")
+def release_check(serial: str, session: Session = Depends(get_session)) -> dict:
+    """May this unit go back to the customer, and if not, why."""
+    return gating.release_check(session, _unit(session, serial)).as_dict()
+
+
+@app.post("/api/units/{serial}/release")
+def release_unit(serial: str, session: Session = Depends(get_session)) -> dict:
+    unit = _unit(session, serial)
+    result = execution.release(session, unit)
+    session.commit()
+    return result
+
+
 @app.get("/api/units/{serial}/birth-certificate")
 def birth_certificate(serial: str, session: Session = Depends(get_session)) -> dict:
     return genealogy.birth_certificate(session, _unit(session, serial))
@@ -577,7 +604,12 @@ def dashboard(line_code: str = "GA-1", session: Session = Depends(get_session)) 
     held = sum(1 for u in units if u.status is UnitStatus.HELD)
 
     return {
-        "line": {"code": line.code, "name": line.name, "takt_seconds": line.takt_seconds},
+        "line": {
+            "code": line.code,
+            "name": line.name,
+            "takt_seconds": line.takt_seconds,
+            "layout": line.layout.value,
+        },
         "stations": [
             {
                 "code": s.code,
@@ -585,6 +617,7 @@ def dashboard(line_code: str = "GA-1", session: Session = Depends(get_session)) 
                 "zone": s.zone.value,
                 "sequence": s.sequence,
                 "ideal_cycle_seconds": s.ideal_cycle_seconds,
+                "capabilities": s.capabilities or [],
                 "units": by_station.get(s.code, []),
             }
             for s in line.stations
@@ -609,9 +642,38 @@ def dashboard(line_code: str = "GA-1", session: Session = Depends(get_session)) 
 # Floor display
 # --------------------------------------------------------------------------
 
+class SimulateShopIn(BaseModel):
+    vehicles: int = Field(40, ge=1, le=200)
+    fault_rate: float = Field(0.07, ge=0.0, le=1.0)
+    leave_in_bays: int = Field(6, ge=0, le=20)
+    seed: int | None = None
+
+
+@app.post("/api/simulate-shop")
+def simulate_shop(body: SimulateShopIn, session: Session = Depends(get_session)) -> dict:
+    """Run a service day through the bays. Demo hook for the shop board."""
+    import random as _random
+
+    from ..simulator_shop import run as run_shop
+
+    result = run_shop(
+        session,
+        vehicles=body.vehicles,
+        defect_rate=body.fault_rate,
+        leave_in_bays=body.leave_in_bays,
+        seed_value=body.seed if body.seed is not None else _random.randint(1, 10**6),
+    )
+    session.commit()
+    return result
+
+
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.get("/", include_in_schema=False)
     def index() -> FileResponse:
         return FileResponse(STATIC_DIR / "index.html")
+
+    @app.get("/shop", include_in_schema=False)
+    def shop_board() -> FileResponse:
+        return FileResponse(STATIC_DIR / "shop.html")

@@ -3,7 +3,7 @@
 A Manufacturing Operating System core: production control, traceability,
 process interlocking and OEE for discrete assembly lines.
 
-![tests](https://github.com/Fitsumtf/fx-mos/actions/workflows/ci.yml/badge.svg)
+![tests](https://github.com/FITEX-INDUSTRIAL/fx-mos/actions/workflows/ci.yml/badge.svg)
 
 Built by [FitEx Industrial](https://fitexindustrial.com).
 Commercial licence — see [LICENSE](LICENSE).
@@ -37,6 +37,22 @@ The reference line models a full vehicle progression:
 SUB-FRAME  →  PRE-MARRIAGE  →  MARRIAGE  →  POST-MARRIAGE  →  END OF LINE
  SF-10        PM-10           MR-10         PO-10             EOL-10
  SF-20        PM-20                         PO-20
+```
+
+## Two layouts
+
+**SEQUENTIAL** — a line. Units travel station to station in order and a station
+cannot be skipped. The gate asks *may this unit move downstream*.
+
+**PARALLEL** — a shop. Each bay is an independent resource with its own
+capabilities; a unit is assigned to one bay, all its work happens there, and it
+leaves from there. The gate asks *may this unit go back to the customer*.
+
+The reference PARALLEL configuration is a ten-bay auto service shop — see
+[docs/SHOP.md](docs/SHOP.md).
+
+```bash
+python -m fx_mos.simulator_shop --vehicles 80 --reset
 ```
 
 ---

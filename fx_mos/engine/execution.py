@@ -19,6 +19,8 @@ from sqlalchemy.orm import Session
 from ..erp import warp
 from ..models import (
     FlowStep,
+    Layout,
+    Line,
     PartConsumption,
     ProcessDatum,
     Severity,
@@ -127,11 +129,27 @@ def run_step(
 
     if unit.status in (UnitStatus.COMPLETE, UnitStatus.SCRAPPED):
         raise ExecutionError(f"{unit.serial} is {unit.status.value}")
-    if unit.current_station_id != step.station_id:
+
+    if step.station_id is None:
+        # Parallel layout: the step runs in whichever bay the unit occupies,
+        # provided that bay is equipped for it.
+        if unit.current_station_id is None:
+            raise ExecutionError(f"{unit.serial} is not assigned to a bay")
+        station_id = unit.current_station_id
+        if step.required_capability:
+            bay = session.get(Station, station_id)
+            if step.required_capability not in (bay.capabilities or []):
+                raise ExecutionError(
+                    f"{bay.code} has no {step.required_capability.replace('_', ' ').lower()}; "
+                    f"{step.code} cannot be done here"
+                )
+    elif unit.current_station_id != step.station_id:
         station = session.get(Station, step.station_id)
         raise ExecutionError(
             f"{unit.serial} is not at {station.code if station else step.station_id}"
         )
+    else:
+        station_id = step.station_id
 
     prior = session.scalars(
         select(UnitStepRecord)
@@ -144,7 +162,7 @@ def run_step(
     record = UnitStepRecord(
         unit_id=unit.id,
         flow_step_id=step.id,
-        station_id=step.station_id,
+        station_id=station_id,
         attempt=(prior.attempt + 1) if prior else 1,
         operator=operator,
         status=StepStatus.IN_PROGRESS,
@@ -161,7 +179,7 @@ def run_step(
             PartConsumption(
                 unit_id=unit.id,
                 step_record_id=record.id,
-                station_id=step.station_id,
+                station_id=station_id,
                 part_number=pn,
                 serial_or_lot=part.get("serial_or_lot", ""),
                 quantity=float(part.get("quantity", 1)),
@@ -180,7 +198,7 @@ def run_step(
                 "part_number": pn,
                 "component_serial": part.get("serial_or_lot", ""),
                 "quantity": float(part.get("quantity", 1)),
-                "station": step.station.code if step.station else "",
+                "station": session.get(Station, station_id).code,
             },
         )
 
@@ -210,7 +228,7 @@ def run_step(
         ok = _evaluate_check(spec, value)
         datum = ProcessDatum(
             unit_id=unit.id,
-            station_id=step.station_id,
+            station_id=station_id,
             step_record_id=record.id,
             check_code=code,
             name=spec.get("name", code),
@@ -255,10 +273,10 @@ def run_step(
         created = nc.open_nc(
             session,
             unit=unit,
-            title=f"{step.name} failed at {step.station.code}",
+            title=f"{step.name} failed at {session.get(Station, station_id).code}",
             severity=severity,
             blocking=step.interlock,
-            station_id=step.station_id,
+            station_id=station_id,
             flow_step_id=step.id,
             detail={"reasons": reasons, "operator": operator},
             opened_by="MOS",
@@ -269,7 +287,7 @@ def run_step(
             aggregate=unit.serial,
             payload={
                 "serial": unit.serial,
-                "station": step.station.code if step.station else "",
+                "station": session.get(Station, station_id).code,
                 "nc": created.code,
                 "severity": severity.value,
                 "reasons": reasons,
@@ -286,6 +304,72 @@ def run_step(
 
 
 # --------------------------------------------------------------------------
+
+
+def assign_bay(session: Session, unit: Unit, bay: Station) -> dict:
+    """Put a unit into a bay in a PARALLEL shop.
+
+    Unlike advancing along a line, this can be undone: a vehicle can be moved
+    to another bay mid-job if a lift is needed, and the record follows it.
+    """
+    decision = gating.evaluate(session, unit, bay)
+    if not decision.allowed:
+        return {"assigned": False, "gate": decision.as_dict()}
+
+    unit.current_station_id = bay.id
+    if unit.status is UnitStatus.QUEUED:
+        unit.status = UnitStatus.IN_PROCESS
+        unit.started_at = unit.started_at or utcnow()
+    session.flush()
+
+    warp.emit(
+        session,
+        topic="mos.unit.assigned",
+        aggregate=unit.serial,
+        payload={"serial": unit.serial, "bay": bay.code},
+    )
+    return {"assigned": True, "bay": bay.code, "gate": decision.as_dict()}
+
+
+def release(session: Session, unit: Unit) -> dict:
+    """Hand the unit back to the customer, if everything checks out.
+
+    This is the gate that carries the liability. If it refuses, the reasons are
+    exactly what the service advisor needs to tell the customer why the car is
+    not ready.
+    """
+    decision = gating.release_check(session, unit)
+    if not decision.allowed:
+        return {"released": False, "gate": decision.as_dict()}
+
+    unit.status = UnitStatus.COMPLETE
+    unit.completed_at = utcnow()
+    previous = session.get(Station, unit.current_station_id) if unit.current_station_id else None
+    unit.current_station_id = None
+    session.flush()
+
+    if previous:
+        session.add(
+            StationEvent(
+                station_id=previous.id,
+                state=StationState.RUN,
+                started_at=unit.started_at or utcnow(),
+                ended_at=unit.completed_at,
+                duration_seconds=(
+                    unit.completed_at - (unit.started_at or unit.completed_at)
+                ).total_seconds(),
+                reason=f"job complete {unit.serial}",
+            )
+        )
+        session.flush()
+
+    warp.emit(
+        session,
+        topic="mos.unit.completed",
+        aggregate=unit.serial,
+        payload=build_handshake(session, unit),
+    )
+    return {"released": True, "gate": decision.as_dict()}
 
 
 def advance(session: Session, unit: Unit, *, force_station: Station | None = None) -> dict:

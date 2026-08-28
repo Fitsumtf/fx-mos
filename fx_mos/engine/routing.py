@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import Flow, FlowStatus, FlowStep, Line, Station, Unit, utcnow
+from ..models import Flow, FlowStatus, FlowStep, Layout, Line, Station, Unit, utcnow
 
 
 class FlowError(Exception):
@@ -82,6 +82,7 @@ def clone_flow(session: Session, source: Flow, *, notes: str = "") -> Flow:
         draft.steps.append(
             FlowStep(
                 station_id=step.station_id,
+                required_capability=step.required_capability,
                 sequence=step.sequence,
                 code=step.code,
                 name=step.name,
@@ -101,9 +102,10 @@ def add_step(
     session: Session,
     flow: Flow,
     *,
-    station: Station,
+    station: Station | None = None,
     code: str,
     name: str,
+    required_capability: str | None = None,
     sequence: int | None = None,
     work_instruction: str = "",
     mandatory: bool = True,
@@ -117,7 +119,7 @@ def add_step(
             f"flow {flow.code} v{flow.version} is {flow.status.value}; "
             "clone it to a new draft before editing"
         )
-    if station.line_id != flow.line_id:
+    if station is not None and station.line_id != flow.line_id:
         raise FlowError(f"station {station.code} is not on line {flow.line_id}")
 
     if sequence is None:
@@ -125,7 +127,8 @@ def add_step(
         sequence = highest + 10
 
     step = FlowStep(
-        station_id=station.id,
+        station_id=station.id if station else None,
+        required_capability=required_capability,
         sequence=sequence,
         code=code,
         name=name,
@@ -160,22 +163,37 @@ def validate(session: Session, flow: Flow) -> ValidationReport:
     if len({s.sequence for s in steps}) != len(steps):
         errors.append("Two steps share a sequence number. Ordering would be ambiguous.")
 
-    # Steps must not move backwards through the line.
     stations = {s.id: s for s in session.scalars(
         select(Station).where(Station.line_id == flow.line_id)
     )}
-    last_seq = -1
-    for step in steps:
-        station = stations.get(step.station_id)
-        if station is None:
-            errors.append(f"Step {step.code} points at a station on another line.")
-            continue
-        if station.sequence < last_seq:
-            errors.append(
-                f"Step {step.code} runs at {station.code}, which is upstream of the "
-                "previous step. A unit cannot travel backwards."
-            )
-        last_seq = max(last_seq, station.sequence)
+    line = session.get(Line, flow.line_id)
+    parallel = line is not None and line.layout is Layout.PARALLEL
+
+    if parallel:
+        # No order to violate. What matters is that some bay can do the work.
+        available = set()
+        for station in stations.values():
+            available |= set(station.capabilities or [])
+        for step in steps:
+            need = step.required_capability
+            if need and need not in available:
+                errors.append(
+                    f"Step {step.code} needs {need}, which no bay in this shop has."
+                )
+    else:
+        # Steps must not move backwards through the line.
+        last_seq = -1
+        for step in steps:
+            station = stations.get(step.station_id)
+            if station is None:
+                errors.append(f"Step {step.code} points at a station on another line.")
+                continue
+            if station.sequence < last_seq:
+                errors.append(
+                    f"Step {step.code} runs at {station.code}, which is upstream of the "
+                    "previous step. A unit cannot travel backwards."
+                )
+            last_seq = max(last_seq, station.sequence)
 
     seen_checks: set[str] = set()
     for step in steps:
@@ -211,7 +229,9 @@ def validate(session: Session, flow: Flow) -> ValidationReport:
                 "Operators will be blocked with no way to satisfy it."
             )
 
-    if not any(s.station and s.station.zone.value == "END_OF_LINE" for s in steps):
+    if not parallel and not any(
+        s.station and s.station.zone.value == "END_OF_LINE" for s in steps
+    ):
         warnings.append("No step runs at end of line. Units will never be signed off.")
 
     return ValidationReport(not errors, errors, warnings)
@@ -268,5 +288,8 @@ def route_for_unit(session: Session, unit: Unit) -> list[FlowStep]:
     )}
     return sorted(
         flow.steps,
-        key=lambda s: (stations[s.station_id].sequence, s.sequence),
+        key=lambda s: (
+            stations[s.station_id].sequence if s.station_id in stations else 0,
+            s.sequence,
+        ),
     )

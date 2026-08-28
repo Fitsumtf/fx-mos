@@ -1,0 +1,128 @@
+/* Service shop board. Inherits the painted-steel palette from styles.css.
+   The difference from the line: bays are a yard, not a conveyor, so they lay
+   out as a grid with no implied direction. */
+
+.bays-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.bays-title {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+  margin: 0;
+}
+.bays-note { font-family: var(--mono); font-size: 11px; color: var(--chalk-faint); }
+
+.bays {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 10px;
+}
+
+.bay-card {
+  background: var(--steel-850);
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--rule-soft);
+  border-radius: 0 0 var(--r) var(--r);
+  padding: 11px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-height: 148px;
+}
+.bay-card.is-busy { border-top-color: var(--go); }
+.bay-card.is-held { border-color: var(--stop); border-top-color: var(--stop); }
+
+.bay-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.bay-id { font-family: var(--mono); font-size: 12.5px; font-weight: 600; }
+.bay-state {
+  font-family: var(--display);
+  font-size: 8.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+}
+.bay-card.is-busy .bay-state { color: var(--go); }
+.bay-card.is-held .bay-state { color: var(--stop); }
+
+.caps { display: flex; flex-wrap: wrap; gap: 4px; }
+.cap {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .04em;
+  color: var(--chalk-faint);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+
+.veh {
+  width: 100%;
+  text-align: left;
+  background: var(--steel-800);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--go);
+  border-radius: 2px;
+  padding: 7px 9px;
+  cursor: pointer;
+  color: var(--chalk);
+  margin-top: auto;
+  transition: border-color .12s;
+}
+.veh:hover { border-color: var(--chalk-faint); }
+.veh:focus-visible { outline: 2px solid var(--safety); outline-offset: 1px; }
+.veh.is-selected { border-color: var(--safety); background: #2A3742; }
+.veh[data-status="HELD"] {
+  border-left-color: var(--safety);
+  background-image: repeating-linear-gradient(
+    -45deg, rgba(242,176,30,.16) 0 8px, transparent 8px 16px);
+}
+.veh-serial { font-family: var(--mono); font-size: 10.5px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.veh-job { font-size: 10.5px; color: var(--chalk-faint); }
+
+.bay-free {
+  margin-top: auto;
+  font-family: var(--display);
+  font-size: 9.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #3A4B58;
+  padding: 10px 0 4px;
+}
+
+/* utilisation rows reuse .oee-row shape but mean bay hours */
+.util-note { font-size: 11.5px; color: var(--chalk-faint); margin: 10px 0 0; padding-top: 9px; border-top: 1px dashed var(--rule); }
+
+/* the money panel */
+.proof-lead {
+  font-size: 12.5px;
+  color: var(--chalk-dim);
+  border-left: 2px solid var(--safety);
+  padding-left: 11px;
+  margin: 0 0 14px;
+}
+.torque-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.torque-line:last-child { border-bottom: none; }
+.torque-line b { font-weight: 500; color: var(--chalk-dim); }
+.torque-line .ok { color: var(--go); }
+.torque-line .bad { color: var(--stop); }
+.torque-line .who { color: var(--chalk-faint); font-size: 10px; }
+
+@media (max-width: 640px) {
+  .bays { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}

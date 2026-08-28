@@ -79,7 +79,11 @@ def allocate(
         raise VinError("plant code must be exactly 1 character")
 
     year = year or dt.date.today().year
-    descriptor = model_code.upper().ljust(5, "0")[:5]  # positions 4-8
+    # I, O and Q never appear in a VIN. A model code that contains them is not
+    # wrong, it just cannot be carried verbatim, so fold it onto the digits it
+    # resembles rather than rejecting the build.
+    folded = model_code.upper().translate(str.maketrans("IOQ", "109"))
+    descriptor = folded.ljust(5, "0")[:5]  # positions 4-8
     serial = f"{sequence:06d}"[-6:]  # positions 12-17
 
     body = f"{wmi.upper()}{descriptor}0{model_year_code(year)}{plant_code.upper()}{serial}"

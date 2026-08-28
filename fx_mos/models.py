@@ -45,12 +45,37 @@ def _enum(py_enum, **kw):
 # --------------------------------------------------------------------------
 
 
+class Layout(str, enum.Enum):
+    """How work moves through the resources.
+
+    SEQUENTIAL — a line. Units travel station to station in order, and a station
+    cannot be skipped. An assembly line.
+
+    PARALLEL — a shop. Each bay is an independent resource. A unit is assigned
+    to one bay, all its work happens there, and it leaves from there. An auto
+    service shop, a repair depot, a rework cell.
+
+    The distinction changes what the gate means. On a line the question is
+    "may this unit move downstream". In a shop the question is "may this unit
+    be released to the customer", which is the only gate that exists.
+    """
+
+    SEQUENTIAL = "SEQUENTIAL"
+    PARALLEL = "PARALLEL"
+
+
 class Zone(str, enum.Enum):
     SUBFRAME = "SUBFRAME"
     PRE_MARRIAGE = "PRE_MARRIAGE"
     MARRIAGE = "MARRIAGE"
     POST_MARRIAGE = "POST_MARRIAGE"
     END_OF_LINE = "END_OF_LINE"
+    # Shop zones. A parallel layout groups bays by capability rather than by
+    # position, so these are categories, not an order.
+    QUICK_SERVICE = "QUICK_SERVICE"
+    GENERAL_REPAIR = "GENERAL_REPAIR"
+    ALIGNMENT = "ALIGNMENT"
+    DIAGNOSTIC = "DIAGNOSTIC"
 
 
 ZONE_ORDER = [
@@ -135,6 +160,7 @@ class Line(Base):
     name: Mapped[str] = mapped_column(String(128))
     plant_code: Mapped[str] = mapped_column(String(1), default="A")
     takt_seconds: Mapped[float] = mapped_column(Float, default=90.0)
+    layout: Mapped[Layout] = mapped_column(_enum(Layout), default=Layout.SEQUENTIAL)
 
     stations: Mapped[list["Station"]] = relationship(
         back_populates="line", order_by="Station.sequence", cascade="all, delete-orphan"
@@ -153,6 +179,9 @@ class Station(Base):
     sequence: Mapped[int] = mapped_column(Integer)
     ideal_cycle_seconds: Mapped[float] = mapped_column(Float, default=60.0)
     capacity: Mapped[int] = mapped_column(Integer, default=1)
+    # What this resource can do, e.g. ["LIFT", "ALIGNMENT_RACK", "TYRE_MACHINE"].
+    # Only consulted in a PARALLEL layout, where any capable bay will serve.
+    capabilities: Mapped[list] = mapped_column(JSON, default=list)
 
     line: Mapped[Line] = relationship(back_populates="stations")
 
@@ -204,7 +233,10 @@ class FlowStep(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     flow_id: Mapped[int] = mapped_column(ForeignKey("flows.id"))
-    station_id: Mapped[int] = mapped_column(ForeignKey("stations.id"))
+    # Null in a PARALLEL layout: the step runs wherever the unit is assigned,
+    # provided that bay has the required capability.
+    station_id: Mapped[int | None] = mapped_column(ForeignKey("stations.id"), nullable=True)
+    required_capability: Mapped[str | None] = mapped_column(String(48), nullable=True)
     sequence: Mapped[int] = mapped_column(Integer)
     code: Mapped[str] = mapped_column(String(64))
     name: Mapped[str] = mapped_column(String(160))

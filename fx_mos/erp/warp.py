@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from ..models import (
     Flow,
+    Layout,
     Line,
     OutboxEvent,
     OutboxStatus,
@@ -168,11 +169,19 @@ def inject_order(
     built_so_far = session.scalar(select(Unit.id).order_by(Unit.id.desc())) or 0
     serials: list[str] = []
     for offset in range(quantity):
-        serial = allocate(
-            sequence=built_so_far + offset + 1,
-            model_code=model_code,
-            plant_code=line.plant_code,
-        )
+        if line.layout is Layout.PARALLEL:
+            # A service shop does not issue VINs — the vehicle arrives with one.
+            # What the shop owns is the repair order number, and that is what
+            # every record here hangs off. The customer's VIN belongs in the BOM
+            # alongside registration and mileage.
+            suffix = f"-{offset + 1}" if quantity > 1 else ""
+            serial = f"{erp_order_id}{suffix}"
+        else:
+            serial = allocate(
+                sequence=built_so_far + offset + 1,
+                model_code=model_code,
+                plant_code=line.plant_code,
+            )
         session.add(
             Unit(
                 serial=serial,
