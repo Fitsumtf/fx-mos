@@ -248,6 +248,8 @@ def main() -> None:
     parser.add_argument("--vehicles", type=int, default=80)
     parser.add_argument("--defect-rate", type=float, default=0.07)
     parser.add_argument("--seed", type=int, default=5)
+    parser.add_argument("--leave-in-bays", type=int, default=0,
+                        help="stop this many vehicles mid-job so the board is not empty")
     parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
 
@@ -258,6 +260,7 @@ def main() -> None:
             vehicles=args.vehicles,
             defect_rate=args.defect_rate,
             seed_value=args.seed,
+            leave_in_bays=args.leave_in_bays,
         )
 
     width = max(len(k) for k in summary)
@@ -273,4 +276,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-i did s
