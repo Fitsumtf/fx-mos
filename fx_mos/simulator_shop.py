@@ -111,7 +111,7 @@ def run(
     shop = session.scalars(select(Line).where(Line.code == SHOP_CODE)).first()
     bays = list(shop.stations)
 
-      # Anchor the day so it *ends* about now. Anchoring to 08:00 wall clock
+    # Anchor the day so it *ends* about now. Anchoring to 08:00 wall clock
     # meant that if you ran the demo at one in the morning, every bay event
     # landed outside the eight-hour reporting window and the utilisation panel
     # drew nothing — the data was there, the question was asked about the
@@ -217,7 +217,7 @@ def run(
             )
         )
 
-               if stop_after is not None:
+        if stop_after is not None:
             # Still on the ramp. Not finished, not held — just mid-job.
             in_bays += 1
         else:
