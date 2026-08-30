@@ -1,0 +1,11 @@
+# Render blueprint. Import this repo at render.com and it picks this up.
+services:
+  - type: web
+    name: fx-mos-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: FX_MOS_DATABASE_URL
+        value: sqlite:////app/fx_mos.db
