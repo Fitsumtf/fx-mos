@@ -111,12 +111,16 @@ def run(
     shop = session.scalars(select(Line).where(Line.code == SHOP_CODE)).first()
     bays = list(shop.stations)
 
-    clock = utcnow().replace(hour=8, minute=0, second=0, microsecond=0)
-    if clock > utcnow():
-        clock -= dt.timedelta(days=1)
+      # Anchor the day so it *ends* about now. Anchoring to 08:00 wall clock
+    # meant that if you ran the demo at one in the morning, every bay event
+    # landed outside the eight-hour reporting window and the utilisation panel
+    # drew nothing — the data was there, the question was asked about the
+    # wrong hours.
+    day_minutes = max(vehicles * 8, 60)
+    clock = utcnow() - dt.timedelta(minutes=day_minutes)
 
     free_at = {bay.id: clock for bay in bays}
-    released = held = caught = 0
+    released = held = caught = in_bays = 0
     torque_catches = 0
 
     for index in range(1, vehicles + 1):
@@ -213,11 +217,15 @@ def run(
             )
         )
 
-        result = execution.release(session, vehicle)
-        if result["released"]:
-            released += 1
+               if stop_after is not None:
+            # Still on the ramp. Not finished, not held — just mid-job.
+            in_bays += 1
         else:
-            held += 1
+            result = execution.release(session, vehicle)
+            if result["released"]:
+                released += 1
+            else:
+                held += 1
 
         free_at[bay.id] = start + dt.timedelta(minutes=elapsed + rng.uniform(3, 9))
         session.commit()
@@ -228,6 +236,7 @@ def run(
     return {
         "vehicles in": vehicles,
         "released": released,
+        "still in bays": in_bays,
         "still held": held,
         "faults caught": caught,
         "torque faults caught": torque_catches,
@@ -264,3 +273,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+i did s
